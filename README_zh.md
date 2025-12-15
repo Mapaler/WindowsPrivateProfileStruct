@@ -13,6 +13,20 @@
 
 ## 🚀 快速开始
 
+## 📦 安装
+
+通过 [NuGet](https://www.nuget.org/packages/WindowsPrivateProfileStruct) 安装包:
+
+```bash
+dotnet add package WindowsPrivateProfileStruct
+```
+
+或通过包管理控制台安装:
+
+```powershell
+Install-Package WindowsPrivateProfileStruct
+```
+
 ### 安装
 引用项目源码（暂未发布 NuGet）：
 ```bash

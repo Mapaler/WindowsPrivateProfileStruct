@@ -15,10 +15,18 @@ Useful when you need to read or write legacy Windows INI files containing embedd
 
 ## 🚀 Quick Start
 
-### Installation
-Reference the project directly (NuGet package not yet published):
+## 📦 Installation
+
+Install the package via [NuGet](https://www.nuget.org/packages/WindowsPrivateProfileStruct):
+
 ```bash
-dotnet add reference ../path/to/WindowsPrivateProfileStruct.csproj
+dotnet add package WindowsPrivateProfileStruct
+```
+
+Or via Package Manager Console:
+
+```powershell
+Install-Package WindowsPrivateProfileStruct
 ```
 
 ### Define Your Struct (must use `LayoutKind.Sequential`)

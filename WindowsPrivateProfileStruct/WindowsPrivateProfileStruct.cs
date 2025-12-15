@@ -37,7 +37,7 @@ namespace WindowsPrivateProfileStruct
         /// struct Config { public int Width; public float Scale; }
         /// 
         /// var cfg = new Config { Width = 100, Scale = 1.5f };
-        /// string hex = Struct.ToHex(cfg); // e.g., "640000000000C03FBD"
+        /// string hex = Struct.ToHex(cfg); // e.g., "640000000000C03F63"
         /// </code>
         /// </example>
         public static string ToHex<T>(T value) where T : struct
