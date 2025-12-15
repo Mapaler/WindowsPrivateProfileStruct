@@ -1,0 +1,29 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <LangVersion>8.0</LangVersion>
+    
+    <!-- NuGet 信息 -->
+    <PackageId>WindowsPrivateProfileStruct</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>Mapaler</Authors>
+    <Description>Emulates the behavior of Windows APIs WritePrivateProfileStructA / GetPrivateProfileStructA for reading and writing structured data in INI files.</Description>
+
+    <!-- 许可证 -->
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    
+    <!-- README 关联 -->
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    
+    <!-- 生成 XML 文档 -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);1591</NoWarn>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\README.md" Pack="true" PackagePath="\" Visible="false" />
+  </ItemGroup>
+</Project>

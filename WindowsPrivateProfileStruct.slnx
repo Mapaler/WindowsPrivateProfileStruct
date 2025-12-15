@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="WindowsPrivateProfileStruct.Test/WindowsPrivateProfileStruct.Test.csproj" />
+  <Project Path="WindowsPrivateProfileStruct/WindowsPrivateProfileStruct.csproj" />
+</Solution>
