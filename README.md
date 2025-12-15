@@ -11,6 +11,11 @@ Useful when you need to read or write legacy Windows INI files containing embedd
 > ⚠️ **Note**: This library is based on observed Windows behavior and practical tests.  
 > It **does not guarantee 100% compatibility in all edge cases** (e.g., unusual packing, platform-specific alignment). Always validate in your target environment.
 
+> [!NOTE]
+> This was originally researched by me in 2020 to generate the `Info` key values inside batch analysis list files (`*.ctl`) used by [**SkyScan/Bruker CTAn (CTAn Analyser)**](https://www.brukersupport.com/) software in its Batch Mode (BatMan). The method was validated through practical testing and confirmed to work.  
+> On December 15, 2025, I discovered the official Windows API function [`WritePrivateProfileStructA`](https://learn.microsoft.com/windows/win32/api/winbase/nf-winbase-writeprivateprofilestructa), and subsequently refined and published this algorithm—optimized with AI assistance—for use with cross-platform libraries that do not rely on Win32 APIs, such as [`ini-parser`](https://github.com/rickyah/ini-parser).  
+> Additionally, the `Config blob` key values found in analysis program files (`*.ctt`) appear to be generated using the same method.
+
 ---
 
 ## 🚀 Quick Start

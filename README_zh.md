@@ -9,6 +9,11 @@
 > [!WARNING]
 > ⚠️ 注意：本库基于实测行为实现，**不保证在所有边缘场景下与 Windows 完全一致**。建议在关键场景中进行兼容性验证。
 
+> [!NOTE]
+> 本人2020年用于生成 [**SkyScan/Bruker CTAn (CTAn Analyser)**](https://www.brukersupport.com/) 软件的批处理模式(BatMan)分析列表(*.ctl)文件内的 `Info` 键值时研究的，经实测研究出可用。  
+> 2025年12月15日才发现 [WritePrivateProfileStructA](https://learn.microsoft.com/windows/win32/api/winbase/nf-winbase-writeprivateprofilestructa) 这个官方函数，于是将算法用 AI 优化整理后发布，以便结合 [`ini-parser`](https://github.com/rickyah/ini-parser) 等未使用 Win32API 的跨平台库使用。
+> 另外分析程序文件(*.ctt)内的 `Config blob` 键值应该也是相同的方法产生的。
+
 ---
 
 ## 🚀 快速开始
@@ -105,7 +110,7 @@ else
 
 ## 🛠 完整示例：替代 `WritePrivateProfileStructA` / `GetPrivateProfileStructA`
 
-本库可与 [`IniParser`](https://github.com/rickyah/ini-parser) 结合，实现跨平台的 INI 结构体读写。
+本库可与 [`ini-parser`](https://github.com/rickyah/ini-parser) 结合，实现跨平台的 INI 结构体读写。
 
 ### 安装 IniParser
 ```bash
