@@ -6,9 +6,14 @@
     
     <!-- NuGet 信息 -->
     <PackageId>WindowsPrivateProfileStruct</PackageId>
-    <Version>1.0.1</Version>
+    <Version>1.0.2</Version>
     <Authors>Mapaler</Authors>
     <Description>Emulates the behavior of Windows APIs WritePrivateProfileStructA / GetPrivateProfileStructA for reading and writing structured data in INI files.</Description>
+
+    <!-- 开源信息 -->
+    <PackageProjectUrl>https://github.com/Mapaler/WindowsPrivateProfileStruct/PackageProjectUrl</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/Mapaler/WindowsPrivateProfileStruct.git</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
 
     <!-- 许可证 -->
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
