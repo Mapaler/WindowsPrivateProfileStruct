@@ -113,11 +113,14 @@ else
 本库可与 [`ini-parser`](https://github.com/rickyah/ini-parser) 结合，实现跨平台的 INI 结构体读写。
 
 ### 安装 IniParser
+
 ```bash
 dotnet add package ini-parser
 ```
 
-### 写入结构体到 INI（模拟 `WritePrivateProfileStructA`）
+---
+
+### ✅ 方法 1：直接十六进制序列化（简洁明了）
 
 ```csharp
 using IniParser;
@@ -148,8 +151,7 @@ parser.WriteFile("app.ini", ini);
 Dataset=0100000000050000D0020000320000003C000000180000005E
 ```
 
-### 从 INI 读取结构体（模拟 `GetPrivateProfileStructA`）
-
+读取数据：
 ```csharp
 // 1. 读取 INI
 var parser = new FileIniDataParser();
@@ -167,7 +169,50 @@ else
 }
 ```
 
-> ✅ 此方案可在 Linux/macOS/.NET Core 上运行，且生成的 INI 文件能被原生 Windows 应用通过 `GetPrivateProfileStructA` 正确读取（经测试验证）。
+---
+
+### 🪟 方法 2：模拟 Windows API（贴近原生调用风格）
+
+如果你希望代码风格更接近原始 Win32 API 的使用方式：
+
+```csharp
+// 为 ini-parser 定义 INI 读写适配器
+static bool WriteIni(string section, string key, string value, string iniFile)
+{
+    var config = new IniParserConfiguration
+    {
+        AssigmentSpacer = string.Empty
+    };
+    var _parser = new IniDataParser(config);
+    var parser = new FileIniDataParser(_parser);
+    var data = File.Exists(iniFile) ? parser.ReadFile(iniFile) : new IniData();
+    data[section][key] = value;
+    parser.WriteFile(iniFile, data, Encoding.Default);
+    return true;
+}
+
+static string? ReadIni(string section, string key, string iniFile)
+{
+    if (!File.Exists(iniFile)) return null;
+    var parser = new FileIniDataParser();
+    return parser.ReadFile(iniFile, Encoding.Default)[section][key];
+}
+
+// 现在可以像调用 Windows API 一样使用
+var config = new DatasetInfo { /* ... */ };
+
+// 写入（模拟 WritePrivateProfileStructA）
+bool written = Struct.WritePrivateProfileStruct(
+    "Window", "Dataset", config, WriteIni, "app.ini");
+
+// 读取（模拟 GetPrivateProfileStructA）
+if (Struct.GetPrivateProfileStruct("Window", "Dataset", out DatasetInfo restored, ReadIni, "app.ini"))
+{
+    Console.WriteLine($"Loaded: {restored.size.width}x{restored.size.height}");
+}
+```
+
+✅ 两种方法生成的 INI 内容完全一致，且都能被原生 Windows 应用通过 `GetPrivateProfileStructA` 正确读取。
 
 ---
 
@@ -178,6 +223,7 @@ else
 - 📦 **支持嵌套结构体**：如 `struct A { public B b; }`。
 - 🌍 **跨平台**：不依赖 Windows API，纯托管代码。
 - 🧩 **零外部依赖**：仅需 `System.Runtime.InteropServices`（.NET Standard 2.0+）。
+- ✅ **Windows API 风格接口**：提供 `WritePrivateProfileStruct` / `GetPrivateProfileStruct` 静态方法，便于迁移旧代码或保持一致调用风格。
 
 ---
 
@@ -208,9 +254,13 @@ else
 ## 📦 API
 
 | 方法 | 说明 |
-|------|------|
-| `Struct.ToHex<T>(T value)` | 序列化结构体为带校验和的 HEX 字符串 |
-| `Struct.FromHex<T>(string hex, out T value)` | 从 HEX 反序列化，验证长度与校验和 |
+| --- | --- |
+| `Struct.ToHex<T>(T value)` | 将结构体序列化为带校验和的十六进制字符串 |
+| `Struct.FromHex<T>(string hex, out T value)` | 从十六进制字符串反序列化结构体，并验证长度与校验和 |
+| `Struct.WritePrivateProfileStruct<T>(string section, string key, T value, IniWriteDelegate writer, string iniFile)` | 模拟 `WritePrivateProfileStructA`：将结构体写入 INI 文件（需提供写入委托） |
+| `Struct.GetPrivateProfileStruct<T>(string section, string key, out T value, IniReadDelegate reader, string iniFile)` | 模拟 `GetPrivateProfileStructA`：从 INI 文件读取结构体（需提供读取委托） |
+
+> 💡 后两个方法支持跨平台，不依赖 Windows API，但需要你传入 INI 文件的读写逻辑（如使用 `ini-parser`）。
 
 ---
 

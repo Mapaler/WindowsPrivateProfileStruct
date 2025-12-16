@@ -1,11 +1,15 @@
 ﻿using IniParser;
 using IniParser.Model;
+using IniParser.Model.Configuration;
+using IniParser.Parser;
+using Microsoft.VisualStudio.TestPlatform.Utilities;
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 using WindowsPrivateProfileStruct;
 using Xunit;
+using Xunit.Abstractions;
 
 [StructLayout(LayoutKind.Sequential)]
 public struct SIZE
@@ -32,10 +36,12 @@ public struct DatasetInfo
 public class WindowsCompatibilityTests : IClassFixture<TempIniFileFixture>
 {
     private readonly string _iniPath;
+    private readonly ITestOutputHelper _output;
 
-    public WindowsCompatibilityTests(TempIniFileFixture fixture)
+    public WindowsCompatibilityTests(TempIniFileFixture fixture, ITestOutputHelper output)
     {
         _iniPath = fixture.IniPath;
+        _output = output;
     }
 
     [Fact]
@@ -162,6 +168,169 @@ public class WindowsCompatibilityTests : IClassFixture<TempIniFileFixture>
         Assert.Equal(original.pos.left, readBack.pos.left);
         Assert.Equal(original.pos.top, readBack.pos.top);
         Assert.Equal(original.colordeep, readBack.colordeep);
+    }
+
+    // ====== 新增：模拟 ini-parser 的 INI 读写委托（用于测试） ======
+    private static bool WriteIniValue(string section, string key, string value, string iniFile)
+    {
+        var config = new IniParserConfiguration
+        {
+            AssigmentSpacer = string.Empty
+        };
+        var _parser = new IniDataParser(config);
+        var parser = new FileIniDataParser(_parser);
+        var data = File.Exists(iniFile) ? parser.ReadFile(iniFile) : new IniData();
+        data[section][key] = value;
+        parser.WriteFile(iniFile, data, Encoding.Default);
+        return true;
+    }
+
+    private static string? ReadIniValue(string section, string key, string iniFile)
+    {
+        if (!File.Exists(iniFile)) return null;
+        var parser = new FileIniDataParser();
+        var data = parser.ReadFile(iniFile, Encoding.Default);
+        return data[section][key];
+    }
+
+    // ====== 新增测试：Roundtrip via Struct.WritePrivateProfileStruct / GetPrivateProfileStruct ======
+    [Fact]
+    public void Roundtrip_Using_Struct_WritePrivateProfileStruct_And_GetPrivateProfileStruct()
+    {
+        // Arrange
+        var original = new DatasetInfo
+        {
+            format = 400,
+            size = new SIZE { width = 1024, height = 768 },
+            pos = new POSITION { left = 30, top = 40 },
+            colordeep = 32
+        };
+
+        // Act: Write using new high-level API
+        bool written = Struct.WritePrivateProfileStruct(
+            "Test", "Data", original, WriteIniValue, _iniPath);
+        Assert.True(written);
+
+        // Act: Read back using new high-level API
+        bool readSuccess = Struct.GetPrivateProfileStruct(
+            "Test", "Data", out DatasetInfo restored, ReadIniValue, _iniPath);
+        Assert.True(readSuccess);
+
+        // Assert
+        Assert.Equal(original.format, restored.format);
+        Assert.Equal(original.size.width, restored.size.width);
+        Assert.Equal(original.size.height, restored.size.height);
+        Assert.Equal(original.pos.left, restored.pos.left);
+        Assert.Equal(original.pos.top, restored.pos.top);
+        Assert.Equal(original.colordeep, restored.colordeep);
+    }
+
+    // ====== 新增测试：Your Struct.WritePrivateProfileStruct → Windows GetPrivateProfileStructA ======
+    [Fact]
+    public void Your_Struct_WritePrivateProfileStruct_CanBeReadBy_Windows_GetPrivateProfileStructA()
+    {
+        // Arrange
+        var original = new DatasetInfo
+        {
+            format = 500,
+            size = new SIZE { width = 1600, height = 900 },
+            pos = new POSITION { left = 100, top = 200 },
+            colordeep = 24
+        };
+
+        // Act: Write using your new high-level API (which uses ToHex internally)
+        bool written = Struct.WritePrivateProfileStruct(
+            "Test", "Data", original, WriteIniValue, _iniPath);
+        Assert.True(written);
+
+        // 🔍 手动读取写入的 HEX 内容用于诊断
+        string? hexWritten = ReadIniValue("Test", "Data", _iniPath);
+
+        // Act: Read using Windows API
+        var readBack = new DatasetInfo();
+        int size = Marshal.SizeOf<DatasetInfo>();
+        IntPtr ptr = Marshal.AllocHGlobal(size);
+        try
+        {
+            Marshal.StructureToPtr(readBack, ptr, false); // init
+            bool success = Interop.GetPrivateProfileStructA("Test", "Data", ptr, (uint)size, _iniPath);
+            // ❌ 如果失败，输出详细上下文
+            if (!success)
+            {
+                // 输出诊断信息
+                _output.WriteLine("=== DIAGNOSTIC INFO ===");
+                _output.WriteLine($"INI file path: {_iniPath}");
+                _output.WriteLine($"Original struct: format={original.format}, size=({original.size.width},{original.size.height}), pos=({original.pos.left},{original.pos.top}), colordeep={original.colordeep}");
+                _output.WriteLine($"Expected size (bytes): {size}");
+                _output.WriteLine($"HEX written to INI: {hexWritten ?? "(null)"}");
+                _output.WriteLine($"HEX length (chars): {hexWritten?.Length ?? 0} → bytes: {(hexWritten?.Length ?? 0) / 2}");
+
+                // 可选：输出整个 INI 文件内容
+                if (File.Exists(_iniPath))
+                {
+                    _output.WriteLine("--- Full INI Content ---");
+                    _output.WriteLine(File.ReadAllText(_iniPath));
+                    _output.WriteLine("------------------------");
+                }
+
+                // 明确失败
+                Assert.True(success, "Windows GetPrivateProfileStructA failed. See diagnostic output above.");
+            }
+            readBack = Marshal.PtrToStructure<DatasetInfo>(ptr);
+        }
+        finally
+        {
+            Marshal.FreeHGlobal(ptr);
+        }
+
+        // Assert
+        Assert.Equal(original.format, readBack.format);
+        Assert.Equal(original.size.width, readBack.size.width);
+        Assert.Equal(original.size.height, readBack.size.height);
+        Assert.Equal(original.pos.left, readBack.pos.left);
+        Assert.Equal(original.pos.top, readBack.pos.top);
+        Assert.Equal(original.colordeep, readBack.colordeep);
+    }
+
+    // ====== 新增测试：Windows WritePrivateProfileStructA → Your Struct.GetPrivateProfileStruct ======
+    [Fact]
+    public void Windows_WritePrivateProfileStructA_CanBeReadBy_Your_Struct_GetPrivateProfileStruct()
+    {
+        // Arrange
+        var original = new DatasetInfo
+        {
+            format = 600,
+            size = new SIZE { width = 1366, height = 768 },
+            pos = new POSITION { left = 50, top = 60 },
+            colordeep = 16
+        };
+
+        // Act: Write using Windows API
+        int size = Marshal.SizeOf<DatasetInfo>();
+        IntPtr ptr = Marshal.AllocHGlobal(size);
+        try
+        {
+            Marshal.StructureToPtr(original, ptr, false);
+            bool written = Interop.WritePrivateProfileStructA("Test", "Data", ptr, (uint)size, _iniPath);
+            Assert.True(written, "WritePrivateProfileStructA failed");
+        }
+        finally
+        {
+            Marshal.FreeHGlobal(ptr);
+        }
+
+        // Act: Read using your new high-level API
+        bool success = Struct.GetPrivateProfileStruct(
+            "Test", "Data", out DatasetInfo restored, ReadIniValue, _iniPath);
+        Assert.True(success, "Your Struct.GetPrivateProfileStruct failed");
+
+        // Assert
+        Assert.Equal(original.format, restored.format);
+        Assert.Equal(original.size.width, restored.size.width);
+        Assert.Equal(original.size.height, restored.size.height);
+        Assert.Equal(original.pos.left, restored.pos.left);
+        Assert.Equal(original.pos.top, restored.pos.top);
+        Assert.Equal(original.colordeep, restored.colordeep);
     }
 }
 

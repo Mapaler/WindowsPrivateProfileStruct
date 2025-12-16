@@ -109,11 +109,14 @@ else
 This library works seamlessly with [`IniParser`](https://github.com/rickyah/ini-parser) to replace Windows-only APIs.
 
 ### Install IniParser
+
 ```bash
 dotnet add package IniParser
 ```
 
-### Write Struct to INI (simulate `WritePrivateProfileStructA`)
+---
+
+### ✅ Method 1: Direct Hex Serialization (Simple & Explicit)
 
 ```csharp
 using IniParser;
@@ -141,11 +144,10 @@ parser.WriteFile("app.ini", ini);
 Resulting `app.ini`:
 ```ini
 [Window]
-Dataset=0100000000050000D0020000320000003C00000018000000E6
+Dataset=0100000000050000D0020000320000003C000000180000005E
 ```
 
-### Read Struct from INI (simulate `GetPrivateProfileStructA`)
-
+Read back:
 ```csharp
 // 1. Read INI
 var parser = new FileIniDataParser();
@@ -163,7 +165,50 @@ else
 }
 ```
 
-> ✅ This approach runs on **Linux, macOS, and Windows**, and produces INI files that native Windows applications can read using `GetPrivateProfileStructA` (verified in tests).
+---
+
+### 🪟 Method 2: Windows API Emulation (Drop-in Replacement Style)
+
+For code that closely mimics the original Win32 API usage pattern:
+
+```csharp
+// Define INI I/O adapters for IniParser
+static bool WriteIni(string section, string key, string value, string iniFile)
+{
+    var config = new IniParserConfiguration
+    {
+        AssigmentSpacer = string.Empty
+    };
+    var _parser = new IniDataParser(config);
+    var parser = new FileIniDataParser(_parser);
+    var data = File.Exists(iniFile) ? parser.ReadFile(iniFile) : new IniData();
+    data[section][key] = value;
+    parser.WriteFile(iniFile, data, Encoding.Default);
+    return true;
+}
+
+static string? ReadIni(string section, string key, string iniFile)
+{
+    if (!File.Exists(iniFile)) return null;
+    var parser = new FileIniDataParser();
+    return parser.ReadFile(iniFile, Encoding.Default)[section][key];
+}
+
+// Now use Windows-like API calls
+var config = new DatasetInfo { /* ... */ };
+
+// Write like WritePrivateProfileStructA
+bool written = Struct.WritePrivateProfileStruct(
+    "Window", "Dataset", config, WriteIni, "app.ini");
+
+// Read like GetPrivateProfileStructA
+if (Struct.GetPrivateProfileStruct("Window", "Dataset", out DatasetInfo restored, ReadIni, "app.ini"))
+{
+    Console.WriteLine($"Loaded: {restored.size.width}x{restored.size.height}");
+}
+```
+
+✅ Both methods produce identical INI content and are fully compatible with native Windows applications using `GetPrivateProfileStructA`.
 
 ---
 
@@ -176,6 +221,7 @@ else
 - 📦 **Nested structs supported**: e.g., `struct A { public B b; }`.
 - 🌍 **Cross-platform**: Pure managed code, no P/Invoke required at runtime.
 - 🧩 **Zero dependencies**: Only uses `System.Runtime.InteropServices` (.NET Standard 2.0+).
+- ✅ **Windows API-style interface**: Provides `WritePrivateProfileStruct` / `GetPrivateProfileStruct` static methods for easy migration or consistent calling style.
 
 ---
 
@@ -206,9 +252,13 @@ Compatibility has been validated by:
 ## 📦 API
 
 | Method | Description |
-|-------|-------------|
-| `Struct.ToHex<T>(T value)` | Serializes a struct to a checksummed HEX string |
-| `Struct.FromHex<T>(string hex, out T value)` | Deserializes HEX to struct, validating length and checksum |
+| --- | --- |
+| `Struct.ToHex<T>(T value)` | Serializes a struct to a checksummed hexadecimal string |
+| `Struct.FromHex<T>(string hex, out T value)` | Deserializes a hex string to a struct, validating length and checksum |
+| `Struct.WritePrivateProfileStruct<T>(string section, string key, T value, IniWriteDelegate writer, string iniFile)` | Emulates `WritePrivateProfileStructA`: writes a struct to an INI file (requires write delegate) |
+| `Struct.GetPrivateProfileStruct<T>(string section, string key, out T value, IniReadDelegate reader, string iniFile)` | Emulates `GetPrivateProfileStructA`: reads a struct from an INI file (requires read delegate) |
+
+> 💡 The last two methods are cross-platform and do not depend on Windows APIs, but require you to provide INI I/O logic (e.g., via `ini-parser`).
 
 ---
 

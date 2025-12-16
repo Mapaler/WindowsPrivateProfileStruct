@@ -6,7 +6,7 @@
     
     <!-- NuGet 信息 -->
     <PackageId>WindowsPrivateProfileStruct</PackageId>
-    <Version>1.0.0</Version>
+    <Version>1.0.1</Version>
     <Authors>Mapaler</Authors>
     <Description>Emulates the behavior of Windows APIs WritePrivateProfileStructA / GetPrivateProfileStructA for reading and writing structured data in INI files.</Description>
 
