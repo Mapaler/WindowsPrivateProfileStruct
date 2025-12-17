@@ -104,14 +104,14 @@ else
 
 ---
 
-## 🛠 Full Example: Cross-Platform INI Struct I/O with `IniParser`
+## 🛠 Full Example: Cross-Platform INI Struct I/O with `ini-parser`
 
-This library works seamlessly with [`IniParser`](https://github.com/rickyah/ini-parser) to replace Windows-only APIs.
+This library works seamlessly with [`ini-parser`](https://github.com/rickyah/ini-parser) to replace Windows-only APIs.
 
-### Install IniParser
+### Install ini-parser
 
 ```bash
-dotnet add package IniParser
+dotnet add package ini-parser
 ```
 
 ---
@@ -172,7 +172,7 @@ else
 For code that closely mimics the original Win32 API usage pattern:
 
 ```csharp
-// Define INI I/O adapters for IniParser
+// Define INI I/O adapters for ini-parser
 static bool WriteIni(string section, string key, string value, string iniFile)
 {
     var config = new IniParserConfiguration

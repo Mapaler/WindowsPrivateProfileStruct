@@ -112,7 +112,7 @@ else
 
 本库可与 [`ini-parser`](https://github.com/rickyah/ini-parser) 结合，实现跨平台的 INI 结构体读写。
 
-### 安装 IniParser
+### 安装 ini-parser
 
 ```bash
 dotnet add package ini-parser
