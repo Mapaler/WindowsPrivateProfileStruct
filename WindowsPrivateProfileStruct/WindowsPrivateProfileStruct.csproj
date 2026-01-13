@@ -11,7 +11,7 @@
     <Description>Emulates the behavior of Windows APIs WritePrivateProfileStructA / GetPrivateProfileStructA for reading and writing structured data in INI files.</Description>
 
     <!-- 开源信息 -->
-    <PackageProjectUrl>https://github.com/Mapaler/WindowsPrivateProfileStruct/PackageProjectUrl</PackageProjectUrl>
+    <PackageProjectUrl>https://github.com/Mapaler/WindowsPrivateProfileStruct</PackageProjectUrl>
     <RepositoryUrl>https://github.com/Mapaler/WindowsPrivateProfileStruct.git</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
 
